@@ -1,0 +1,21 @@
+PROJECT_ID="my_project_id"
+LOCATION=europe-west1
+
+echo "DisplayName,Name,DestinationDatasetId,DestinationTableNameTemplate,OwnerEmail"
+echo "---------------------------------------------------------------------------------------------------"
+
+
+TRANSFER_CONFIG_IDS=$(bq ls --transfer_config --transfer_location=$LOCATION --format=json | jq -r '.[].name' )
+
+if [ -z "$TRANSFER_CONFIG_IDS" ]; then
+    echo "No scheduled queries found in project $PROJECT_ID in location $LOCATION."
+else
+    for CONFIG_FULL_PATH in $TRANSFER_CONFIG_IDS; do
+        # Utilise le chemin complet directement avec bq show, ce qui rend inutile --project_id et --location ici
+        bq show --format=json --transfer_config "$CONFIG_FULL_PATH" | \
+        jq -r '[.displayName, .name, .destinationDatasetId, .params.destination_table_name_template, .ownerInfo.email // ""] | @csv'
+    done
+fi
+
+echo "---"
+echo "Done."
